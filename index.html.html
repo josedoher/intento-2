@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Registro de guardia · Anestesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F6F5F1; --surface:#FFFFFF; --ink:#1C2624; --ink-soft:#5B6A64;
+    --teal:#146A63; --teal-deep:#0E3F3B; --teal-glow:#4FD8C4;
+    --amber:#B8722E; --amber-soft:#F3E2CE; --line:#DDE3DE; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(rgba(20,106,99,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,106,99,0.06) 1px, transparent 1px),
+      radial-gradient(circle at 50% -10%, rgba(20,106,99,0.12), transparent 55%);
+    background-size:24px 24px, 24px 24px, 100% 100%;
+    background-attachment:fixed;
+    color:var(--ink); font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:48px;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px;}
+  .screen{display:none;} .screen.active{display:block;}
+
+  .monitor{background:var(--teal-deep);color:#EAFBF7;padding:20px 16px 16px;margin-bottom:18px;}
+  .monitor-top{display:flex;justify-content:space-between;align-items:baseline;max-width:520px;margin:0 auto 12px;}
+  .eyebrow{font-family:'Space Grotesk',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8FC9BF;font-weight:600;}
+  .date-label{font-family:'Space Grotesk',sans-serif;font-size:13px;color:#BFE3DB;font-weight:500;}
+  .readouts{max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .readout{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius);padding:11px 14px;}
+  .readout-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8FC9BF;font-weight:600;margin-bottom:4px;}
+  .readout-value{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:30px;font-weight:600;line-height:1;color:var(--teal-glow);text-shadow:0 0 14px rgba(79,216,196,0.35);}
+  .readout-sub{font-size:11px;color:#9FCFC5;margin-top:4px;font-weight:500;}
+
+  .home-squares{display:flex;flex-direction:column;gap:12px;min-height:calc(100svh - 230px);padding-bottom:6px;}
+  .square{flex:1;min-height:26vh;border-radius:20px;border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;cursor:pointer;padding:0 24px;text-align:left;transition:transform .1s ease;}
+  .square:active{transform:scale(0.98);}
+  .square.primary{flex:1.25;background:var(--teal);border-color:var(--teal);color:#fff;}
+  .square svg{width:34px;height:34px;stroke:var(--ink);flex-shrink:0;}
+  .square.primary svg{stroke:#fff;width:44px;height:44px;}
+  .square-text{display:flex;flex-direction:column;gap:5px;}
+  .square-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
+  .square.primary .square-title{font-size:22px;}
+  .square-sub{font-size:12.5px;color:var(--ink-soft);}
+  .square.primary .square-sub{color:#CFEDE7;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px;}
+  .back-btn{display:flex;align-items:center;gap:4px;background:none;border:none;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:var(--teal);cursor:pointer;padding:4px 0;}
+  .screen-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;}
+
+  .section{margin-bottom:20px;}
+  .section-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:10px;}
+  .section-hint{font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5;}
+
+  .mode-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:9px 14px;margin-bottom:9px;}
+  .mode-text{display:flex;flex-direction:column;gap:2px;}
+  .mode-title{font-size:13.5px;font-weight:600;}
+  .mode-sub{font-size:11.5px;color:var(--ink-soft);}
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#D9DED9;border-radius:999px;cursor:pointer;transition:background .15s ease;}
+  .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.25);}
+  .switch input:checked + .slider{background:var(--amber);}
+  .switch input:checked + .slider::before{transform:translateX(20px);}
+
+  .adv-toggle{width:100%;background:var(--surface);border:1px dashed #C3CBC5;border-radius:var(--radius);padding:8px 14px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:left;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;}
+  .adv-panel{display:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:9px;margin-top:-4px;}
+  .adv-panel.open{display:block;}
+  .adv-panel .field{margin-bottom:10px;}
+  .adv-panel .field:last-child{margin-bottom:0;}
+
+  .pending-bar{display:none;background:var(--amber-soft);border:1.5px solid #E3C79A;border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;}
+  .pending-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .pending-head span{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;color:#7A4E1E;}
+  .pending-clear{background:none;border:none;font-size:11.5px;color:#7A4E1E;text-decoration:underline;cursor:pointer;font-weight:600;}
+  .pending-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .pending-chip{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #E3C79A;border-radius:999px;padding:5px 5px 5px 10px;font-size:11.5px;font-weight:600;color:#7A4E1E;}
+  .pending-chip button{background:none;border:none;color:#B5504A;font-size:14px;cursor:pointer;padding:1px 5px;line-height:1;}
+  .pending-hint{font-size:11px;color:#7A4E1E;line-height:1.5;}
+
+  .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .tech-btn{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:10px 12px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--ink);transition:transform .08s ease, border-color .12s ease, background .12s ease;display:flex;flex-direction:column;gap:4px;position:relative;}
+  .tech-btn:active{transform:scale(0.96);}
+  .tech-btn .icon-row{display:flex;align-items:center;justify-content:space-between;min-height:18px;}
+  .tech-btn .tb-emoji{font-size:17px;line-height:1;}
+  .tech-btn .badge{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--ink-soft);}
+  .tech-btn .count-row{display:flex;align-items:baseline;gap:6px;}
+  .tech-btn .count{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--teal);}
+  .tech-btn .attempts{font-size:10.5px;color:var(--amber);font-weight:600;}
+  .tech-btn.armed{border-color:var(--amber);background:var(--amber-soft);}
+  .tech-btn.armed .count{color:var(--amber);}
+  .tech-btn.has-pending{border-color:var(--teal);box-shadow:0 0 0 1.5px var(--teal) inset;}
+  .tech-btn .undo{align-self:flex-end;font-size:10.5px;color:var(--ink-soft);text-decoration:underline;font-weight:500;}
+  .add-tech-btn{background:transparent;border:1.5px dashed #C3CBC5;border-radius:var(--radius);padding:13px 12px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:center;grid-column:1 / -1;}
+  .inline-form{display:none;gap:8px;margin-top:9px;}
+  .inline-form.open{display:flex;}
+  .inline-form input{flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);font-family:'Inter',sans-serif;font-size:13.5px;background:var(--surface);}
+  .inline-form button{background:var(--teal);color:#fff;border:none;border-radius:10px;padding:0 16px;font-weight:600;font-size:13px;cursor:pointer;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;}
+  .field{margin-bottom:10px;position:relative;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  select, .field input{width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line);font-family:'Inter',sans-serif;font-size:14px;background:#FCFCFB;color:var(--ink);}
+  .primary-btn{width:100%;background:var(--teal);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Space Grotesk',sans-serif;letter-spacing:.02em;}
+  .primary-btn:active{transform:scale(0.985);}
+  .primary-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .ghost-btn{width:100%;background:transparent;color:var(--teal);border:1.5px solid var(--teal);border-radius:10px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+  .danger-btn{width:100%;background:transparent;color:#B5504A;border:1.5px solid #E3B3AE;border-radius:10px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+
+  .suggest-list{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.08);z-index:5;overflow:hidden;display:none;}
+  .suggest-list.open{display:block;}
+  .suggest-item{padding:10px 12px;font-size:13.5px;cursor:pointer;border-bottom:1px solid #F1F1EE;}
+  .suggest-item:last-child{border-bottom:none;}
+  .suggest-item:active{background:#F6F5F1;}
+
+  .surgery-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  .surgery-item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:#FCFCFB;border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .surgery-item .info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .surgery-item .spec{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.05em;}
+  .surgery-item .desc{font-size:13.5px;font-weight:500;overflow-wrap:anywhere;}
+  .surgery-item .meta{font-size:11px;color:var(--ink-soft);overflow-wrap:anywhere;}
+  .item-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+  .item-actions button{background:none;border:none;cursor:pointer;line-height:1;padding:4px;}
+  .item-actions .del{color:#B5504A;font-size:18px;}
+  .item-actions .edit{color:var(--ink-soft);font-size:14px;}
+  .empty-note{font-size:12.5px;color:var(--ink-soft);padding:10px 2px;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,38,36,0.5);z-index:50;align-items:flex-end;justify-content:center;padding:0;}
+  .modal-overlay.open{display:flex;}
+  .modal-card{background:#fff;border-radius:20px 20px 0 0;padding:20px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;}
+  .modal-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15.5px;margin-bottom:4px;}
+  .modal-sub{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+  .modal-actions{display:flex;gap:10px;margin-top:14px;}
+
+  .segmented{display:flex;background:#EBEAE5;border-radius:10px;padding:3px;margin-bottom:14px;}
+  .segmented button{flex:1;border:none;background:transparent;padding:8px 0;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .segmented button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+  .bar-group{margin-bottom:18px;}
+  .bar-group-title{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+  .bar-name{font-size:12.5px;width:132px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bar-track{flex:1;height:8px;background:#EAEAE4;border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--teal);border-radius:6px;}
+  .bar-fill.amber{background:var(--amber);}
+  .bar-val{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;width:26px;text-align:right;flex-shrink:0;}
+  .summary-row{display:flex;gap:10px;margin-bottom:18px;}
+  .summary-chip{flex:1;background:#FCFCFB;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .summary-chip .val{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--teal);}
+  .summary-chip .lbl{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .export-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Space Grotesk',sans-serif;margin-bottom:14px;}
+  .export-btn svg{width:16px;height:16px;stroke:#fff;}
+
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10px;color:var(--ink-soft);font-weight:700;margin-bottom:4px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;background:#FCFCFB;border:1px solid var(--line);cursor:pointer;}
+  .cal-cell.cal-blank{border:none;cursor:default;background:transparent;}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+  .cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-soft);}
+  .cal-legend-swatch{width:12px;height:12px;border-radius:4px;display:inline-block;}
+  input#calMonth{width:auto;padding:8px 10px;font-size:13px;margin-bottom:10px;}
+
+  .chip-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+  .chip{display:flex;align-items:center;gap:2px;background:#FCFCFB;border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 12px;font-size:12.5px;font-weight:500;}
+  .chip button{background:none;border:none;font-size:14px;cursor:pointer;padding:2px 5px;line-height:1;}
+  .chip .edit-icon-btn{color:var(--ink-soft);font-size:12px;}
+  .chip .del-btn{color:#B5504A;font-size:15px;}
+  .tag-chip{cursor:pointer;user-select:none;}
+  .tag-chip.selected{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .tag-cat-label{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px;}
+  .tag-cat-label:first-child{margin-top:0;}
+  .tag-cat-block{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;}
+  .tag-cat-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700;font-size:13px;}
+  .tag-cat-header button{background:none;border:none;color:#B5504A;font-size:11px;text-decoration:underline;cursor:pointer;}
+
+  .col-options{display:flex;gap:8px;}
+  .col-opt{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:#FCFCFB;text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer;}
+  .col-opt.selected{border-color:var(--teal);background:var(--teal);color:#fff;}
+  .swatches{display:flex;gap:10px;margin-top:4px;}
+  .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;}
+  .swatch.selected{border-color:var(--ink);}
+  .range-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .range-row input[type=number]{width:52px;padding:8px;border-radius:8px;border:1.5px solid var(--line);text-align:center;}
+  .range-row input[type=color]{width:36px;height:36px;padding:0;border:1.5px solid var(--line);border-radius:8px;}
+  .range-row button{background:none;border:none;color:#B5504A;font-size:16px;cursor:pointer;}
+  .order-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;}
+  .order-row:last-child{border-bottom:none;}
+  .order-btns button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#FCFCFB;font-size:13px;cursor:pointer;margin-left:4px;}
+  .order-btns button:disabled{opacity:.3;}
+  .help-text{font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
+  .help-text b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div id="screen-home" class="screen active">
+  <div class="monitor">
+    <div class="monitor-top">
+      <span class="eyebrow">Registro de guardia</span>
+      <span class="date-label" id="dateLabel">—</span>
+    </div>
+    <div class="readouts">
+      <div class="readout">
+        <div class="readout-label">Técnicas hoy</div>
+        <div class="readout-value" id="techToday">0</div>
+        <div class="readout-sub" id="techTodaySub">0 exitosas · 0 intentos</div>
+      </div>
+      <div class="readout">
+        <div class="readout-label">Cirugías hoy</div>
+        <div class="readout-value" id="surgToday">0</div>
+        <div class="readout-sub">&nbsp;</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="home-squares">
+      <div class="square" onclick="goTo('stats')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="5" y1="20" x2="5" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="19" y1="20" x2="19" y2="14"/></svg>
+        <div class="square-text"><span class="square-title">Estadísticas</span><span class="square-sub">Ver y exportar a Excel</span></div>
+      </div>
+      <div class="square primary" onclick="goTo('register')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <div class="square-text"><span class="square-title">Registrar</span><span class="square-sub">Técnicas y cirugías</span></div>
+      </div>
+      <div class="square" onclick="goTo('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09A1.65 1.65 0 0015.4 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <div class="square-text"><span class="square-title">Ajustes</span><span class="square-sub">Editar listas y colores</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ REGISTRAR ============ -->
+<div id="screen-register" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">‹ Inicio</button>
+      <span class="screen-title">Registrar</span>
+      <span style="width:52px"></span>
+    </div>
+
+    <div class="mode-row">
+      <div class="mode-text">
+        <span class="mode-title">Modo intento</span>
+        <span class="mode-sub">Registra el intento aunque no salga</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="attemptMode">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <button class="adv-toggle" onclick="toggleAdvPanel()">
+      <span>Detalles avanzados (fecha, adjunto, notas, etiquetas)</span>
+      <span id="advToggleArrow">▾</span>
+    </button>
+    <div class="adv-panel" id="advPanel">
+      <div class="field">
+        <label for="advDate">Fecha de estas entradas</label>
+        <input type="date" id="advDate">
+      </div>
+      <div class="field">
+        <label for="advAdjunto">Adjunto / con quién estuve</label>
+        <input type="text" id="advAdjunto" placeholder="Ej: Dra. Pérez">
+      </div>
+      <div class="field">
+        <label for="advNotes">Notas</label>
+        <input type="text" id="advNotes" placeholder="Ej: turno de tarde, paciente complejo...">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Etiquetas para lo que añadas ahora</label>
+        <div id="advTags"></div>
+      </div>
+    </div>
+
+    <div class="pending-bar" id="pendingBar"></div>
+
+    <div class="segmented" id="registerTabs">
+      <button data-tab="tech" class="active">Técnicas</button>
+      <button data-tab="surg">Cirugías</button>
+    </div>
+
+    <div class="section" id="regTechTab">
+      <div class="tech-grid" id="techGrid"></div>
+      <div class="inline-form" id="addTechForm">
+        <input type="text" id="newTechInput" placeholder="Nombre de la técnica">
+        <button onclick="submitNewTechnique()">Añadir</button>
+      </div>
+      <button class="primary-btn" id="saveTechBtn" style="margin-top:12px;" onclick="saveTechniques()" disabled>Guardar técnicas</button>
+    </div>
+
+    <div class="section" id="regSurgTab" style="display:none;">
+      <div class="card">
+        <div class="field">
+          <label for="specSelect">Especialidad</label>
+          <select id="specSelect" onchange="onSpecChange()"></select>
+        </div>
+        <div class="field" id="customSpecField" style="display:none;">
+          <label for="customSpecInput">Nueva especialidad</label>
+          <input type="text" id="customSpecInput" placeholder="Escribe la especialidad">
+        </div>
+        <div class="field">
+          <label for="surgDesc">Cirugía</label>
+          <input type="text" id="surgDesc" placeholder="Empieza a escribir..." autocomplete="off">
+          <div class="suggest-list" id="suggestList"></div>
+        </div>
+        <button class="primary-btn" onclick="submitSurgery()">Añadir cirugía</button>
+        <div class="surgery-list" id="surgeryList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ESTADÍSTICAS ============ -->
+<div id="screen-stats" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">‹ Inicio</button>
+      <span class="screen-title">Estadísticas</span>
+      <span style="width:52px"></span>
+    </div>
+
+    <button class="export-btn" onclick="exportToExcel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar todo a Excel
+    </button>
+
+    <div class="segmented" id="statsTabs">
+      <button data-mode="daily" class="active">Diario</button>
+      <button data-mode="weekly">Semanal</button>
+      <button data-mode="monthly">Mensual</button>
+      <button data-mode="total">Total</button>
+    </div>
+
+    <div id="statsDatePicker" class="field"><input type="date" id="statsDate"></div>
+    <div id="statsWeekPicker" class="field" style="display:none;"><input type="week" id="statsWeek"></div>
+    <div id="statsMonthPicker" class="field" style="display:none;"><input type="month" id="statsMonth"></div>
+
+    <div id="statsWidgets"></div>
+  </div>
+</div>
+
+<!-- ============ AJUSTES ============ -->
+<div id="screen-settings" class="screen">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">‹ Inicio</button>
+      <span class="screen-title">Ajustes</span>
+      <span style="width:52px"></span>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Técnicas</div>
+      <div class="card">
+        <div class="section-hint">Pulsa el lápiz ✎ de cada técnica para ponerle un emoji.</div>
+        <div class="chip-list" id="techChips"></div>
+        <div class="inline-form open" style="margin-top:0;margin-bottom:14px;">
+          <input type="text" id="settingsTechInput" placeholder="Nueva técnica">
+          <button onclick="addTechniqueToConfig()">Añadir</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Columnas de la cuadrícula al registrar</label>
+          <div class="col-options" id="gridColsOptions"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Bloqueos periféricos</div>
+      <div class="card">
+        <div class="section-hint">Opciones del desplegable al pulsar "Bloqueo periférico".</div>
+        <div class="chip-list" id="blockChips"></div>
+        <div class="inline-form open" style="margin-top:0;">
+          <input type="text" id="settingsBlockInput" placeholder="Nuevo tipo de bloqueo">
+          <button onclick="addBlockToConfig()">Añadir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Especialidades</div>
+      <div class="card">
+        <div class="chip-list" id="specChips"></div>
+        <div class="inline-form open" style="margin-top:0;">
+          <input type="text" id="settingsSpecInput" placeholder="Nueva especialidad">
+          <button onclick="addSpecialtyToConfig()">Añadir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Etiquetas</div>
+      <div class="card">
+        <div class="section-hint">Agrupa etiquetas por categoría (antecedentes, eventos intraoperatorios...).</div>
+        <div id="tagCategoriesList"></div>
+        <div class="inline-form open" style="margin-top:10px;">
+          <input type="text" id="newTagCategoryInput" placeholder="Nueva categoría">
+          <button onclick="addTagCategory()">Añadir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Colores del calendario</div>
+      <div class="card">
+        <div class="section-hint">Desde cuántas técnicas al día se pinta cada color.</div>
+        <div id="calRangesList"></div>
+        <button class="ghost-btn" style="margin-top:4px;" onclick="addCalRange()">+ Añadir rango</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Orden de las estadísticas</div>
+      <div class="card"><div id="statsOrderList"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Color de acento</div>
+      <div class="card"><div class="swatches" id="swatches"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Datos</div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+        <button class="ghost-btn" onclick="exportToExcel()">Exportar a Excel</button>
+        <button class="danger-btn" onclick="clearAllData()">Borrar todos los registros</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Guardar la app en tu móvil</div>
+      <div class="card help-text">
+        <p><b>iPhone (Safari):</b> abre el enlace del artefacto, toca el botón de compartir y elige "Añadir a pantalla de inicio".</p>
+        <p><b>Android (Chrome):</b> abre el enlace, toca el menú de tres puntos y elige "Añadir a pantalla de inicio" o "Instalar app".</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL BLOQUEO ============ -->
+<div class="modal-overlay" id="blockModal">
+  <div class="modal-card">
+    <div class="modal-title">¿Qué bloqueo has hecho?</div>
+    <div class="modal-sub">Elige el tipo — se guardará junto con la técnica.</div>
+    <select id="blockTypeSelect"></select>
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeBlockModal()">Cancelar</button>
+      <button class="primary-btn" onclick="confirmBlockModal()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL EDITAR ENTRADA ============ -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <div class="modal-title" id="editModalTitle">Editar</div>
+    <div class="field">
+      <label for="editTimeInput">Hora</label>
+      <input type="time" id="editTimeInput">
+    </div>
+    <div class="field">
+      <label for="editNotesInput">Notas</label>
+      <input type="text" id="editNotesInput">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Etiquetas</label>
+      <div id="editTagsPicker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeEditModal()">Cancelar</button>
+      <button class="primary-btn" onclick="confirmEditModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Compatibilidad de almacenamiento: usa window.storage de Claude si existe,
+   o localStorage si la app se aloja fuera de Claude. */
+if(typeof window.storage === "undefined"){
+  window.storage = {
+    async get(key){
+      const v = localStorage.getItem("anestesia_" + key);
+      if(v === null) throw new Error("not found");
+      return { key, value: v, shared: false };
+    },
+    async set(key, value){
+      localStorage.setItem("anestesia_" + key, value);
+      return { key, value, shared: false };
+    },
+    async delete(key){
+      localStorage.removeItem("anestesia_" + key);
+      return { key, deleted: true, shared: false };
+    },
+    async list(prefix){
+      const p = "anestesia_" + (prefix || "");
+      const keys = Object.keys(localStorage).filter(k => k.startsWith(p)).map(k => k.slice(10));
+      return { keys };
+    }
+  };
+}
+
+/* ================= Config & state ================= */
+const DEFAULT_TECHNIQUES = [
+  "Intubación orotraqueal","Vía arterial","Vía venosa central","Epidural",
+  "Raquianestesia","Bloqueo periférico","Mascarilla laríngea","Secuencia rápida"
+];
+const DEFAULT_SPECIALTIES = [
+  "General","Traumatología","C. cardiaca","Urología","Ginecología",
+  "Otorrino","Oftalmología","Neurocirugía","C. pediátrica","C. vascular",
+  "C. plástica","Obstetricia","Digestivo"
+];
+const DEFAULT_BLOCK_TYPES = [
+  "Interescalénico","Supraclavicular","Infraclavicular","Axilar","Femoral",
+  "Ciático poplíteo","TAP","Erector de la espina","Paravertebral","Fascia ilíaca"
+];
+const DEFAULT_TAG_CATEGORIES = [
+  { name: "Antecedentes", tags: ["Cardiopatía","HTA","HTP","Diabetes","Obesidad","EPOC"] },
+  { name: "Eventos intraoperatorios", tags: ["Hemorragia masiva","Hipotensión","Vía aérea difícil","Broncoespasmo","Reacción alérgica"] }
+];
+const DEFAULT_CAL_RANGES = [
+  { min:1, max:2, color:"#CDEAE3" },
+  { min:3, max:5, color:"#7FC9BA" },
+  { min:6, max:999, color:"#146A63" }
+];
+const DEFAULT_STATS_ORDER = ["calendario","resumen","tecnicas","especialidades","detalle"];
+const STATS_WIDGET_LABELS = {
+  calendario: "Calendario mensual",
+  resumen: "Resumen del periodo",
+  tecnicas: "Técnicas más frecuentes",
+  especialidades: "Especialidades más frecuentes",
+  detalle: "Detalle del día"
+};
+const THEME_SWATCHES = ["#146A63","#1B4B91","#7A3B8C","#8C3B3B","#3B6B2E","#2E2E2E"];
+const STORAGE_KEY = "anestesia-log";
+
+let state = {
+  config: {
+    techniques: [...DEFAULT_TECHNIQUES],
+    specialties: [...DEFAULT_SPECIALTIES],
+    blockTypes: [...DEFAULT_BLOCK_TYPES],
+    tagCategories: JSON.parse(JSON.stringify(DEFAULT_TAG_CATEGORIES)),
+    calendarRanges: JSON.parse(JSON.stringify(DEFAULT_CAL_RANGES)),
+    statsOrder: [...DEFAULT_STATS_ORDER],
+    techniqueIcons: {},
+    techGridCols: 2,
+    theme: THEME_SWATCHES[0]
+  },
+  logs: { techniques: [], surgeries: [] }
+};
+let currentStatsMode = "daily";
+let pendingTechniques = [];
+let pendingBlockName = null;
+let selectedAdvTags = new Set();
+let editTarget = null;
+let editSelectedTags = new Set();
+
+function todayStr(){ return dateToStr(new Date()); }
+function dateToStr(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function isoWeekStr(d){
+  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dayNum = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - dayNum + 3);
+  const firstThursday = new Date(date.getFullYear(), 0, 4);
+  const fdDayNum = (firstThursday.getDay() + 6) % 7;
+  firstThursday.setDate(firstThursday.getDate() - fdDayNum + 3);
+  const week = 1 + Math.round((date - firstThursday) / (7*86400000));
+  return `${date.getFullYear()}-W${String(week).padStart(2,"0")}`;
+}
+function weekRange(weekStr){
+  const [y,w] = weekStr.split("-W").map(Number);
+  const simple = new Date(y,0,1 + (w-1)*7);
+  const dow = simple.getDay() || 7;
+  const monday = new Date(simple); monday.setDate(simple.getDate()-dow+1);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  return { startStr: dateToStr(monday), endStr: dateToStr(sunday) };
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const p = JSON.parse(res.value);
+      state.config.techniques = p.config?.techniques?.length ? p.config.techniques : DEFAULT_TECHNIQUES;
+      state.config.specialties = p.config?.specialties?.length ? p.config.specialties : DEFAULT_SPECIALTIES;
+      state.config.blockTypes = p.config?.blockTypes?.length ? p.config.blockTypes : DEFAULT_BLOCK_TYPES;
+      state.config.tagCategories = p.config?.tagCategories?.length ? p.config.tagCategories : DEFAULT_TAG_CATEGORIES;
+      state.config.calendarRanges = p.config?.calendarRanges?.length ? p.config.calendarRanges : DEFAULT_CAL_RANGES;
+      state.config.statsOrder = p.config?.statsOrder?.length ? p.config.statsOrder : DEFAULT_STATS_ORDER;
+      state.config.techniqueIcons = p.config?.techniqueIcons || {};
+      state.config.techGridCols = p.config?.techGridCols || 2;
+      state.config.theme = p.config?.theme || THEME_SWATCHES[0];
+      state.logs.techniques = p.logs?.techniques || [];
+      state.logs.surgeries = p.logs?.surgeries || [];
+    }
+  }catch(e){ console.log("Sin datos previos, empezando de cero.", e); }
+  applyTheme();
+}
+async function saveState(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
+  catch(e){ console.error("Error guardando:", e); }
+}
+function applyTheme(){ document.documentElement.style.setProperty('--teal', state.config.theme); }
+
+/* ================= Navigation ================= */
+function goTo(screen){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  if(screen === 'home') renderHome();
+  if(screen === 'register') renderRegister();
+  if(screen === 'stats') renderStats();
+  if(screen === 'settings') renderSettings();
+}
+function fmtDateLabel(){
+  const d = new Date();
+  let s = d.toLocaleDateString("es-ES", { weekday:"long", day:"numeric", month:"long" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ================= Home ================= */
+function renderHome(){
+  document.getElementById("dateLabel").textContent = fmtDateLabel();
+  const t = todayStr();
+  const todayTech = state.logs.techniques.filter(e => e.date === t);
+  const succ = todayTech.filter(e => e.success).length;
+  const att = todayTech.filter(e => !e.success).length;
+  document.getElementById("techToday").textContent = todayTech.length;
+  document.getElementById("techTodaySub").textContent = `${succ} exitosas · ${att} intentos`;
+  document.getElementById("surgToday").textContent = state.logs.surgeries.filter(e => e.date === t).length;
+}
+
+/* ================= Advanced panel ================= */
+function toggleAdvPanel(){
+  const panel = document.getElementById("advPanel");
+  panel.classList.toggle("open");
+  document.getElementById("advToggleArrow").textContent = panel.classList.contains("open") ? "▴" : "▾";
+}
+function activeDate(){ return document.getElementById("advDate").value || todayStr(); }
+function activeAdjunto(){ return document.getElementById("advAdjunto").value.trim(); }
+function activeNotes(){ return document.getElementById("advNotes").value.trim(); }
+function activeTags(){ return Array.from(selectedAdvTags); }
+function renderAdvTagPicker(){
+  const container = document.getElementById("advTags");
+  let html = "";
+  state.config.tagCategories.forEach(cat => {
+    html += `<div class="tag-cat-label">${esc(cat.name)}</div><div class="chip-list">`;
+    cat.tags.forEach(t => {
+      html += `<span class="chip tag-chip ${selectedAdvTags.has(t) ? "selected" : ""}" data-tag="${esc(t)}">${esc(t)}</span>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html || `<div class="empty-note">Añade etiquetas desde Ajustes.</div>`;
+}
+document.getElementById("advTags").addEventListener("click", (ev) => {
+  const chip = ev.target.closest(".tag-chip");
+  if(!chip) return;
+  const t = chip.dataset.tag;
+  if(selectedAdvTags.has(t)) selectedAdvTags.delete(t); else selectedAdvTags.add(t);
+  chip.classList.toggle("selected");
+});
+
+/* ================= Techniques: staging & saving ================= */
+function isBlockTechnique(name){
+  const n = name.toLowerCase();
+  return n.includes("bloqueo") || n.includes("plexo");
+}
+function stageTechnique(name, success, detail){
+  pendingTechniques.push({ name, success, detail: detail || null });
+  renderTechGridOnly();
+  renderPendingBar();
+}
+function undoLastPending(name){
+  for(let i = pendingTechniques.length - 1; i >= 0; i--){
+    if(pendingTechniques[i].name === name){ pendingTechniques.splice(i,1); break; }
+  }
+  renderTechGridOnly();
+  renderPendingBar();
+}
+function removePendingAt(i){
+  pendingTechniques.splice(i,1);
+  renderTechGridOnly();
+  renderPendingBar();
+}
+function clearPending(){
+  pendingTechniques = [];
+  renderTechGridOnly();
+  renderPendingBar();
+}
+function saveTechniques(){
+  if(pendingTechniques.length === 0) return;
+  const d = activeDate(), adj = activeAdjunto(), notes = activeNotes(), tags = activeTags();
+  pendingTechniques.forEach(p => {
+    state.logs.techniques.push({
+      id: uid(), name: p.name, date: d, timestamp: new Date().toISOString(),
+      success: p.success, detail: p.detail || null, surgeryId: null,
+      adjunto: adj, notes: notes, tags: tags.slice()
+    });
+  });
+  pendingTechniques = [];
+  selectedAdvTags.clear();
+  renderAdvTagPicker();
+  saveState();
+  renderTechGridOnly();
+  renderPendingBar();
+  renderHome();
+}
+function submitNewTechnique(){
+  const input = document.getElementById("newTechInput");
+  const name = input.value.trim();
+  if(!name) return;
+  if(!state.config.techniques.includes(name)) state.config.techniques.push(name);
+  input.value = "";
+  document.getElementById("addTechForm").classList.remove("open");
+  saveState();
+  renderTechGridOnly();
+}
+function toggleAddTechForm(){ document.getElementById("addTechForm").classList.toggle("open"); }
+
+function renderTechGridOnly(){
+  const grid = document.getElementById("techGrid");
+  grid.style.gridTemplateColumns = `repeat(${state.config.techGridCols || 2}, 1fr)`;
+  const attemptMode = document.getElementById("attemptMode").checked;
+  const dateFilter = activeDate();
+  const dayEntries = state.logs.techniques.filter(e => e.date === dateFilter);
+
+  let html = "";
+  state.config.techniques.forEach(name => {
+    const saved = dayEntries.filter(e => e.name === name);
+    const savedSuccess = saved.filter(e => e.success).length;
+    const savedTotal = saved.length;
+    const pend = pendingTechniques.filter(p => p.name === name);
+    const pendSuccess = pend.filter(p => p.success).length;
+    const pendAttempt = pend.filter(p => !p.success).length;
+    const emoji = state.config.techniqueIcons[name] || "";
+
+    html += `<div class="tech-btn ${attemptMode ? "armed" : ""} ${pend.length ? "has-pending" : ""}" data-name="${esc(name)}">
+      <div class="icon-row">
+        <span class="tb-emoji">${emoji}</span>
+        ${savedTotal > 0 ? `<span class="badge">hoy ${savedSuccess}/${savedTotal}</span>` : ""}
+      </div>
+      <span>${esc(name)}</span>
+      <div class="count-row">
+        <span class="count">${pendSuccess}</span>
+        ${pendAttempt > 0 ? `<span class="attempts">+${pendAttempt} intento${pendAttempt>1?"s":""}</span>` : ""}
+      </div>
+      ${pend.length > 0 ? `<span class="undo" data-undo="${esc(name)}">deshacer último</span>` : ""}
+    </div>`;
+  });
+  grid.innerHTML = html;
+
+  const addBtn = document.createElement("button");
+  addBtn.className = "add-tech-btn";
+  addBtn.textContent = "+ Añadir técnica";
+  addBtn.onclick = toggleAddTechForm;
+  grid.appendChild(addBtn);
+
+  const saveBtn = document.getElementById("saveTechBtn");
+  saveBtn.disabled = pendingTechniques.length === 0;
+  saveBtn.textContent = pendingTechniques.length
+    ? `Guardar ${pendingTechniques.length} técnica${pendingTechniques.length>1?"s":""}`
+    : "Guardar técnicas";
+}
+document.getElementById("techGrid").addEventListener("click", (ev) => {
+  const undoEl = ev.target.closest("[data-undo]");
+  if(undoEl){ undoLastPending(undoEl.dataset.undo); return; }
+  const btn = ev.target.closest(".tech-btn");
+  if(!btn) return;
+  const name = btn.dataset.name;
+  const attemptMode = document.getElementById("attemptMode").checked;
+  if(isBlockTechnique(name)){ openBlockModal(name); return; }
+  stageTechnique(name, !attemptMode, null);
+});
+
+function renderPendingBar(){
+  const bar = document.getElementById("pendingBar");
+  if(pendingTechniques.length === 0){ bar.style.display = "none"; bar.innerHTML = ""; return; }
+  bar.style.display = "block";
+  const n = pendingTechniques.length;
+  bar.innerHTML = `
+    <div class="pending-head">
+      <span>${n} técnica${n>1?"s":""} pendiente${n>1?"s":""} de guardar</span>
+      <button class="pending-clear" onclick="clearPending()">vaciar</button>
+    </div>
+    <div class="pending-chips">
+      ${pendingTechniques.map((p,i) => `<span class="pending-chip">${esc(p.name)}${p.detail ? " · "+esc(p.detail) : ""}${p.success ? "" : " (intento)"}<button data-remove="${i}">×</button></span>`).join("")}
+    </div>
+    <div class="pending-hint">Se guardan solas con "Guardar técnicas", o se vinculan automáticamente a la próxima cirugía que añadas.</div>
+  `;
+}
+document.getElementById("pendingBar").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-remove]");
+  if(btn) removePendingAt(parseInt(btn.dataset.remove, 10));
+});
+
+/* ================= Block modal ================= */
+function openBlockModal(name){
+  pendingBlockName = name;
+  const sel = document.getElementById("blockTypeSelect");
+  sel.innerHTML = state.config.blockTypes.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("");
+  document.getElementById("blockModal").classList.add("open");
+}
+function closeBlockModal(){
+  document.getElementById("blockModal").classList.remove("open");
+  pendingBlockName = null;
+}
+function confirmBlockModal(){
+  const detail = document.getElementById("blockTypeSelect").value;
+  const attemptMode = document.getElementById("attemptMode").checked;
+  stageTechnique(pendingBlockName, !attemptMode, detail);
+  closeBlockModal();
+}
+
+/* ================= Surgeries ================= */
+function lastUsedSpecialty(){
+  if(state.logs.surgeries.length === 0) return state.config.specialties[0];
+  return state.logs.surgeries[state.logs.surgeries.length - 1].specialty;
+}
+function onSpecChange(){
+  const val = document.getElementById("specSelect").value;
+  document.getElementById("customSpecField").style.display = (val === "__other__") ? "block" : "none";
+}
+function surgeryDescriptions(){
+  const counts = {};
+  state.logs.surgeries.forEach(s => { if(s.description) counts[s.description] = (counts[s.description]||0)+1; });
+  return Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([d]) => d);
+}
+function renderSuggestions(){
+  const input = document.getElementById("surgDesc");
+  const query = input.value.trim().toLowerCase();
+  const all = surgeryDescriptions();
+  let matches;
+  if(!query){ matches = all.slice(0,5); }
+  else{
+    const starts = all.filter(d => d.toLowerCase().startsWith(query));
+    const includes = all.filter(d => !d.toLowerCase().startsWith(query) && d.toLowerCase().includes(query));
+    matches = [...starts, ...includes].slice(0,5);
+  }
+  const list = document.getElementById("suggestList");
+  if(matches.length === 0){ list.classList.remove("open"); list.innerHTML = ""; return; }
+  list.innerHTML = matches.map((m,i) => `<div class="suggest-item" data-i="${i}">${esc(m)}</div>`).join("");
+  list.dataset.matches = JSON.stringify(matches);
+  list.classList.add("open");
+}
+document.getElementById("suggestList").addEventListener("click", (ev) => {
+  const item = ev.target.closest(".suggest-item");
+  if(!item) return;
+  const matches = JSON.parse(document.getElementById("suggestList").dataset.matches || "[]");
+  document.getElementById("surgDesc").value = matches[parseInt(item.dataset.i,10)];
+  document.getElementById("suggestList").classList.remove("open");
+});
+document.getElementById("surgDesc").addEventListener("input", renderSuggestions);
+document.getElementById("surgDesc").addEventListener("focus", renderSuggestions);
+document.addEventListener("click", (ev) => {
+  const list = document.getElementById("suggestList");
+  if(list && !ev.target.closest("#surgDesc") && !ev.target.closest("#suggestList")) list.classList.remove("open");
+});
+
+function submitSurgery(){
+  const sel = document.getElementById("specSelect");
+  let specialty = sel.value;
+  if(specialty === "__other__"){
+    const custom = document.getElementById("customSpecInput").value.trim();
+    if(!custom) return;
+    specialty = custom;
+    if(!state.config.specialties.includes(custom)) state.config.specialties.push(custom);
+  }
+  const descInput = document.getElementById("surgDesc");
+  const description = descInput.value.trim();
+  const surgId = uid();
+  const d = activeDate(), adj = activeAdjunto(), notes = activeNotes(), tags = activeTags();
+
+  state.logs.surgeries.push({ id: surgId, date: d, timestamp: new Date().toISOString(), specialty, description, adjunto: adj, notes: notes, tags: tags.slice() });
+
+  if(pendingTechniques.length > 0){
+    pendingTechniques.forEach(p => {
+      state.logs.techniques.push({
+        id: uid(), name: p.name, date: d, timestamp: new Date().toISOString(),
+        success: p.success, detail: p.detail || null, surgeryId: surgId,
+        adjunto: adj, notes: notes, tags: tags.slice()
+      });
+    });
+    pendingTechniques = [];
+  }
+
+  descInput.value = "";
+  document.getElementById("customSpecInput").value = "";
+  selectedAdvTags.clear();
+  renderAdvTagPicker();
+  saveState();
+  renderSurgerySection();
+  renderTechGridOnly();
+  renderPendingBar();
+  renderHome();
+}
+function deleteSurgery(id){
+  state.logs.techniques.forEach(t => { if(t.surgeryId === id) t.surgeryId = null; });
+  state.logs.surgeries = state.logs.surgeries.filter(s => s.id !== id);
+  saveState();
+}
+function linkedTechLabel(surgeryId){
+  const linked = state.logs.techniques.filter(t => t.surgeryId === surgeryId);
+  if(linked.length === 0) return "";
+  return "Técnicas: " + linked.map(t => t.detail ? `${t.name} (${t.detail})` : t.name).join(", ");
+}
+function renderSurgerySection(){
+  const sel = document.getElementById("specSelect");
+  const prevVal = sel.value;
+  sel.innerHTML = state.config.specialties.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
+    + `<option value="__other__">Otra…</option>`;
+  const wanted = [...sel.options].some(o => o.value === prevVal) ? prevVal : lastUsedSpecialty();
+  sel.value = wanted;
+
+  const list = document.getElementById("surgeryList");
+  const dayEntries = state.logs.surgeries.filter(e => e.date === activeDate());
+  if(dayEntries.length === 0){
+    list.innerHTML = `<div class="empty-note">Sin cirugías registradas ese día todavía.</div>`;
+    return;
+  }
+  list.innerHTML = [...dayEntries].reverse().map(s => {
+    const time = new Date(s.timestamp).toLocaleTimeString("es-ES", { hour:"2-digit", minute:"2-digit" });
+    const metaBits = [];
+    const linked = linkedTechLabel(s.id);
+    if(linked) metaBits.push(linked);
+    if(s.adjunto) metaBits.push("con " + s.adjunto);
+    if(s.notes) metaBits.push(s.notes);
+    return `<div class="surgery-item">
+      <div class="info">
+        <span class="spec">${esc(s.specialty)} · ${time}</span>
+        <span class="desc">${esc(s.description) || "Sin descripción"}</span>
+        ${metaBits.length ? `<span class="meta">${esc(metaBits.join(" · "))}</span>` : ""}
+      </div>
+      <button style="background:none;border:none;color:#B5504A;font-size:18px;cursor:pointer;padding:4px;" data-del="${s.id}" title="Eliminar">×</button>
+    </div>`;
+  }).join("");
+}
+document.getElementById("surgeryList").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-del]");
+  if(btn){ deleteSurgery(btn.dataset.del); renderSurgerySection(); renderHome(); }
+});
+
+function renderRegister(){
+  if(!document.getElementById("advDate").value) document.getElementById("advDate").value = todayStr();
+  renderAdvTagPicker();
+  renderTechGridOnly();
+  renderSurgerySection();
+  renderPendingBar();
+}
+document.getElementById("registerTabs").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button");
+  if(!btn) return;
+  document.querySelectorAll("#registerTabs button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const tab = btn.dataset.tab;
+  document.getElementById("regTechTab").style.display = tab === "tech" ? "block" : "none";
+  document.getElementById("regSurgTab").style.display = tab === "surg" ? "block" : "none";
+});
+document.getElementById("advDate").addEventListener("input", () => { renderTechGridOnly(); renderSurgerySection(); });
+document.getElementById("attemptMode").addEventListener("change", renderTechGridOnly);
+
+/* ================= Stats: filtering ================= */
+function filterByMode(arr, mode){
+  if(mode === "daily") return arr.filter(e => e.date === document.getElementById("statsDate").value);
+  if(mode === "weekly"){
+    const wr = weekRange(document.getElementById("statsWeek").value);
+    return arr.filter(e => e.date >= wr.startStr && e.date <= wr.endStr);
+  }
+  if(mode === "monthly"){
+    const m = document.getElementById("statsMonth").value;
+    return arr.filter(e => e.date.startsWith(m));
+  }
+  return arr;
+}
+
+/* ================= Stats: widgets ================= */
+function widgetResumenHTML(techFiltered, surgFiltered){
+  const succ = techFiltered.filter(e => e.success).length;
+  const rate = techFiltered.length ? Math.round(succ/techFiltered.length*100) : 0;
+  return `<div class="summary-row">
+    <div class="summary-chip"><div class="val">${techFiltered.length}</div><div class="lbl">Técnicas</div></div>
+    <div class="summary-chip"><div class="val">${rate}%</div><div class="lbl">Éxito</div></div>
+    <div class="summary-chip"><div class="val">${surgFiltered.length}</div><div class="lbl">Cirugías</div></div>
+  </div>`;
+}
+function widgetTecnicasHTML(techFiltered){
+  const counts = {};
+  techFiltered.forEach(e => {
+    if(!counts[e.name]) counts[e.name] = { success:0, attempt:0 };
+    if(e.success) counts[e.name].success++; else counts[e.name].attempt++;
+  });
+  const entries = Object.entries(counts).sort((a,b) => (b[1].success+b[1].attempt) - (a[1].success+a[1].attempt));
+  const max = Math.max(1, ...entries.map(([,v]) => v.success + v.attempt));
+  const rows = entries.length === 0
+    ? `<div class="empty-note">Sin datos en este periodo.</div>`
+    : entries.map(([name, v]) => {
+        const total = v.success + v.attempt;
+        return `<div class="bar-row">
+          <span class="bar-name">${esc(name)}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(total/max*100).toFixed(0)}%"></div></div>
+          <span class="bar-val">${total}</span>
+        </div>`;
+      }).join("");
+  return `<div class="bar-group"><div class="bar-group-title">Técnicas más frecuentes</div>${rows}</div>`;
+}
+function widgetEspecialidadesHTML(surgFiltered){
+  const counts = {};
+  surgFiltered.forEach(e => { counts[e.specialty] = (counts[e.specialty]||0)+1; });
+  const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const max = Math.max(1, ...entries.map(([,v]) => v));
+  const rows = entries.length === 0
+    ? `<div class="empty-note">Sin cirugías en este periodo.</div>`
+    : entries.map(([name, v]) => `
+        <div class="bar-row">
+          <span class="bar-name">${esc(name)}</span>
+          <div class="bar-track"><div class="bar-fill amber" style="width:${(v/max*100).toFixed(0)}%"></div></div>
+          <span class="bar-val">${v}</span>
+        </div>`).join("");
+  return `<div class="bar-group"><div class="bar-group-title">Especialidades más frecuentes</div>${rows}</div>`;
+}
+function widgetDetalleHTML(techFiltered, surgFiltered){
+  if(currentStatsMode !== "daily") return "";
+  let html = `<div class="bar-group"><div class="bar-group-title">Técnicas del día</div>`;
+  if(techFiltered.length === 0){ html += `<div class="empty-note">Sin técnicas ese día.</div>`; }
+  else{
+    html += techFiltered.map(e => {
+      const time = new Date(e.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+      const surg = e.surgeryId ? state.logs.surgeries.find(s => s.id === e.surgeryId) : null;
+      const metaParts = [];
+      if(e.detail) metaParts.push(e.detail);
+      if(surg) metaParts.push("cirugía: " + surg.specialty);
+      if(e.adjunto) metaParts.push("con " + e.adjunto);
+      if(e.notes) metaParts.push(e.notes);
+      if(e.tags && e.tags.length) metaParts.push("etiquetas: " + e.tags.join(", "));
+      return `<div class="surgery-item">
+        <div class="info">
+          <span class="spec">${esc(e.name)} · ${time} · ${e.success ? "éxito" : "intento"}</span>
+          ${metaParts.length ? `<span class="meta">${esc(metaParts.join(" · "))}</span>` : ""}
+        </div>
+        <div class="item-actions">
+          <button class="edit" data-edittech="${e.id}" title="Editar">✎</button>
+          <button class="del" data-deltechentry="${e.id}" title="Eliminar">×</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  html += `</div><div class="bar-group"><div class="bar-group-title">Cirugías del día</div>`;
+  if(surgFiltered.length === 0){ html += `<div class="empty-note">Sin cirugías ese día.</div>`; }
+  else{
+    html += surgFiltered.map(e => {
+      const time = new Date(e.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+      const metaParts = [];
+      const linked = linkedTechLabel(e.id);
+      if(linked) metaParts.push(linked);
+      if(e.adjunto) metaParts.push("con " + e.adjunto);
+      if(e.notes) metaParts.push(e.notes);
+      if(e.tags && e.tags.length) metaParts.push("etiquetas: " + e.tags.join(", "));
+      return `<div class="surgery-item">
+        <div class="info">
+          <span class="spec">${esc(e.specialty)} · ${time}</span>
+          <span class="desc">${esc(e.description) || "Sin descripción"}</span>
+          ${metaParts.length ? `<span class="meta">${esc(metaParts.join(" · "))}</span>` : ""}
+        </div>
+        <div class="item-actions">
+          <button class="edit" data-editsurg="${e.id}" title="Editar">✎</button>
+          <button class="del" data-delsurgentry="${e.id}" title="Eliminar">×</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  html += `</div>`;
+  return html;
+}
+function colorForCount(count){
+  const ranges = state.config.calendarRanges || [];
+  for(const r of ranges){ if(count >= r.min && count <= r.max) return r.color; }
+  return ranges.length ? ranges[ranges.length-1].color : "#146A63";
+}
+function pickTextColor(hex){
+  if(!hex) return "#1C2624";
+  const c = hex.replace("#","");
+  const r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
+  const lum = (0.299*r+0.587*g+0.114*b)/255;
+  return lum > 0.6 ? "#1C2624" : "#FFFFFF";
+}
+function widgetCalendarioHTML(monthVal){
+  const [y,m] = monthVal.split("-").map(Number);
+  const firstDay = new Date(y, m-1, 1);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const leadBlanks = (firstDay.getDay()+6)%7;
+  const counts = {};
+  state.logs.techniques.forEach(e => { if(e.date.startsWith(monthVal)) counts[e.date] = (counts[e.date]||0)+1; });
+
+  let cells = "";
+  for(let i=0;i<leadBlanks;i++) cells += `<div class="cal-cell cal-blank"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const dayStr = `${monthVal}-${String(day).padStart(2,"0")}`;
+    const count = counts[dayStr] || 0;
+    const bg = count > 0 ? colorForCount(count) : "transparent";
+    const textColor = count > 0 ? pickTextColor(colorForCount(count)) : "var(--ink)";
+    cells += `<div class="cal-cell" style="background:${bg};color:${textColor}" data-day="${dayStr}" title="${count} técnica${count===1?"":"s"}">${day}</div>`;
+  }
+  const trailBlanks = (7 - ((leadBlanks + daysInMonth) % 7)) % 7;
+  for(let i=0;i<trailBlanks;i++) cells += `<div class="cal-cell cal-blank"></div>`;
+
+  const legend = (state.config.calendarRanges||[]).map(r => {
+    const label = r.max >= 900 ? `${r.min}+` : `${r.min}-${r.max}`;
+    return `<span class="cal-legend-item"><span class="cal-legend-swatch" style="background:${r.color}"></span>${label}</span>`;
+  }).join("");
+
+  return `<div class="bar-group">
+    <div class="bar-group-title">Calendario mensual</div>
+    <input type="month" id="calMonth" value="${monthVal}" onchange="renderStats()">
+    <div class="cal-weekdays"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="cal-grid">${cells}</div>
+    <div class="cal-legend">${legend}</div>
+  </div>`;
+}
+
+function renderStats(){
+  if(!document.getElementById("statsDate").value) document.getElementById("statsDate").value = todayStr();
+  if(!document.getElementById("statsWeek").value) document.getElementById("statsWeek").value = isoWeekStr(new Date());
+  if(!document.getElementById("statsMonth").value) document.getElementById("statsMonth").value = todayStr().slice(0,7);
+
+  document.getElementById("statsDatePicker").style.display = currentStatsMode === "daily" ? "block" : "none";
+  document.getElementById("statsWeekPicker").style.display = currentStatsMode === "weekly" ? "block" : "none";
+  document.getElementById("statsMonthPicker").style.display = currentStatsMode === "monthly" ? "block" : "none";
+
+  const techFiltered = filterByMode(state.logs.techniques, currentStatsMode);
+  const surgFiltered = filterByMode(state.logs.surgeries, currentStatsMode);
+
+  const calMonthEl = document.getElementById("calMonth");
+  const calMonthVal = calMonthEl ? calMonthEl.value : todayStr().slice(0,7);
+
+  const widgetFns = {
+    calendario: () => widgetCalendarioHTML(calMonthVal),
+    resumen: () => widgetResumenHTML(techFiltered, surgFiltered),
+    tecnicas: () => widgetTecnicasHTML(techFiltered),
+    especialidades: () => widgetEspecialidadesHTML(surgFiltered),
+    detalle: () => widgetDetalleHTML(techFiltered, surgFiltered)
+  };
+  document.getElementById("statsWidgets").innerHTML =
+    (state.config.statsOrder || DEFAULT_STATS_ORDER).map(id => (widgetFns[id] ? widgetFns[id]() : "")).join("");
+}
+document.getElementById("statsTabs").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button");
+  if(!btn) return;
+  document.querySelectorAll("#statsTabs button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentStatsMode = btn.dataset.mode;
+  renderStats();
+});
+document.getElementById("statsDate").addEventListener("change", renderStats);
+document.getElementById("statsWeek").addEventListener("change", renderStats);
+document.getElementById("statsMonth").addEventListener("change", renderStats);
+
+function jumpToDay(dayStr){
+  currentStatsMode = "daily";
+  document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.mode === "daily"));
+  document.getElementById("statsDate").value = dayStr;
+  renderStats();
+}
+function deleteTechniqueEntry(id){
+  state.logs.techniques = state.logs.techniques.filter(t => t.id !== id);
+  saveState();
+  renderStats();
+  renderHome();
+}
+document.getElementById("statsWidgets").addEventListener("click", (ev) => {
+  const day = ev.target.closest("[data-day]");
+  if(day && !day.classList.contains("cal-blank")){ jumpToDay(day.dataset.day); return; }
+  const et = ev.target.closest("[data-edittech]");
+  if(et){ openEditEntry("tech", et.dataset.edittech); return; }
+  const es = ev.target.closest("[data-editsurg]");
+  if(es){ openEditEntry("surg", es.dataset.editsurg); return; }
+  const dt = ev.target.closest("[data-deltechentry]");
+  if(dt){ deleteTechniqueEntry(dt.dataset.deltechentry); return; }
+  const ds = ev.target.closest("[data-delsurgentry]");
+  if(ds){ deleteSurgery(ds.dataset.delsurgentry); renderStats(); renderHome(); return; }
+});
+
+/* ================= Edit entry modal ================= */
+function openEditEntry(type, id){
+  const list = type === "tech" ? state.logs.techniques : state.logs.surgeries;
+  const entry = list.find(e => e.id === id);
+  if(!entry) return;
+  editTarget = { type, id };
+  editSelectedTags = new Set(entry.tags || []);
+  document.getElementById("editModalTitle").textContent = "Editar: " + (type === "tech" ? entry.name : entry.specialty);
+  const d = new Date(entry.timestamp);
+  document.getElementById("editTimeInput").value = String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+  document.getElementById("editNotesInput").value = entry.notes || "";
+  renderEditTagsPicker();
+  document.getElementById("editModal").classList.add("open");
+}
+function renderEditTagsPicker(){
+  const container = document.getElementById("editTagsPicker");
+  let html = "";
+  state.config.tagCategories.forEach(cat => {
+    html += `<div class="tag-cat-label">${esc(cat.name)}</div><div class="chip-list">`;
+    cat.tags.forEach(t => {
+      html += `<span class="chip tag-chip ${editSelectedTags.has(t) ? "selected" : ""}" data-etag="${esc(t)}">${esc(t)}</span>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html || `<div class="empty-note">Sin etiquetas configuradas.</div>`;
+}
+document.getElementById("editTagsPicker").addEventListener("click", (ev) => {
+  const chip = ev.target.closest(".tag-chip");
+  if(!chip) return;
+  const t = chip.dataset.etag;
+  if(editSelectedTags.has(t)) editSelectedTags.delete(t); else editSelectedTags.add(t);
+  chip.classList.toggle("selected");
+});
+function closeEditModal(){
+  document.getElementById("editModal").classList.remove("open");
+  editTarget = null;
+}
+function confirmEditModal(){
+  if(!editTarget) return;
+  const list = editTarget.type === "tech" ? state.logs.techniques : state.logs.surgeries;
+  const entry = list.find(e => e.id === editTarget.id);
+  if(!entry){ closeEditModal(); return; }
+  const timeVal = document.getElementById("editTimeInput").value;
+  if(timeVal){
+    const [hh,mm] = timeVal.split(":").map(Number);
+    const d = new Date(entry.timestamp);
+    d.setHours(hh, mm, 0, 0);
+    entry.timestamp = d.toISOString();
+  }
+  entry.notes = document.getElementById("editNotesInput").value.trim();
+  entry.tags = Array.from(editSelectedTags);
+  saveState();
+  closeEditModal();
+  renderStats();
+}
+
+/* ================= Export ================= */
+function exportToExcel(){
+  const surgById = {};
+  state.logs.surgeries.forEach(s => surgById[s.id] = s);
+
+  const techRows = state.logs.techniques.map(e => {
+    const surg = e.surgeryId ? surgById[e.surgeryId] : null;
+    return {
+      Fecha: e.date,
+      Hora: new Date(e.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}),
+      Técnica: e.name,
+      Detalle: e.detail || "",
+      Resultado: e.success ? "Éxito" : "Intento",
+      "Cirugía vinculada": surg ? `${surg.specialty}${surg.description ? " - "+surg.description : ""}` : "",
+      Etiquetas: (e.tags||[]).join(", "),
+      Adjunto: e.adjunto || "",
+      Notas: e.notes || ""
+    };
+  });
+  const surgRows = state.logs.surgeries.map(e => ({
+    Fecha: e.date,
+    Hora: new Date(e.timestamp).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}),
+    Especialidad: e.specialty,
+    Cirugía: e.description || "",
+    "Técnicas vinculadas": state.logs.techniques.filter(t => t.surgeryId === e.id)
+      .map(t => t.detail ? `${t.name} (${t.detail})` : t.name).join(", "),
+    Etiquetas: (e.tags||[]).join(", "),
+    Adjunto: e.adjunto || "",
+    Notas: e.notes || ""
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(techRows), "Técnicas");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(surgRows), "Cirugías");
+  XLSX.writeFile(wb, "registro-anestesia.xlsx");
+}
+
+/* ================= Settings ================= */
+function renderSettings(){
+  document.getElementById("techChips").innerHTML = state.config.techniques.map(t => {
+    const emoji = state.config.techniqueIcons[t] || "";
+    return `<span class="chip">${emoji ? esc(emoji)+" " : ""}${esc(t)}<button class="edit-icon-btn" data-editicon="${esc(t)}">✎</button><button class="del-btn" data-deltech="${esc(t)}">×</button></span>`;
+  }).join("");
+
+  document.getElementById("blockChips").innerHTML = state.config.blockTypes.map(b =>
+    `<span class="chip">${esc(b)}<button class="del-btn" data-delblock="${esc(b)}">×</button></span>`
+  ).join("");
+
+  document.getElementById("specChips").innerHTML = state.config.specialties.map(s =>
+    `<span class="chip">${esc(s)}<button class="del-btn" data-delspec="${esc(s)}">×</button></span>`
+  ).join("");
+
+  document.getElementById("swatches").innerHTML = THEME_SWATCHES.map(c =>
+    `<div class="swatch ${state.config.theme === c ? "selected":""}" style="background:${c}" data-theme="${c}"></div>`
+  ).join("");
+
+  document.getElementById("gridColsOptions").innerHTML = [1,2,3].map(n =>
+    `<div class="col-opt ${state.config.techGridCols === n ? "selected":""}" data-cols="${n}">${n} col.</div>`
+  ).join("");
+
+  document.getElementById("tagCategoriesList").innerHTML = state.config.tagCategories.map((cat,ci) => `
+    <div class="tag-cat-block">
+      <div class="tag-cat-header">
+        <span>${esc(cat.name)}</span>
+        <button onclick="removeTagCategory(${ci})">Eliminar categoría</button>
+      </div>
+      <div class="chip-list">
+        ${cat.tags.map((t,ti) => `<span class="chip">${esc(t)}<button class="del-btn" onclick="removeTagFromCategory(${ci},${ti})">×</button></span>`).join("")}
+      </div>
+      <div class="inline-form open" style="margin-top:0;">
+        <input type="text" id="tagInput_${ci}" placeholder="Nueva etiqueta">
+        <button onclick="addTagToCategory(${ci})">Añadir</button>
+      </div>
+    </div>
+  `).join("") || `<div class="empty-note">Añade una categoría para empezar.</div>`;
+
+  document.getElementById("calRangesList").innerHTML = state.config.calendarRanges.map((r,i) => `
+    <div class="range-row">
+      <input type="number" min="0" value="${r.min}" onchange="updateCalRange(${i},'min',this.value)">
+      <span>–</span>
+      <input type="number" min="0" value="${r.max}" onchange="updateCalRange(${i},'max',this.value)">
+      <input type="color" value="${r.color}" onchange="updateCalRange(${i},'color',this.value)">
+      <button onclick="removeCalRange(${i})">×</button>
+    </div>
+  `).join("");
+
+  document.getElementById("statsOrderList").innerHTML = state.config.statsOrder.map((id,i) => `
+    <div class="order-row">
+      <span>${STATS_WIDGET_LABELS[id] || id}</span>
+      <div class="order-btns">
+        <button onclick="moveStatsWidget(${i},'up')" ${i===0?"disabled":""}>▲</button>
+        <button onclick="moveStatsWidget(${i},'down')" ${i===state.config.statsOrder.length-1?"disabled":""}>▼</button>
+      </div>
+    </div>
+  `).join("");
+}
+document.getElementById("techChips").addEventListener("click", (ev) => {
+  const editBtn = ev.target.closest("[data-editicon]");
+  if(editBtn){ editTechniqueIcon(editBtn.dataset.editicon); return; }
+  const delBtn = ev.target.closest("[data-deltech]");
+  if(delBtn) removeTechnique(delBtn.dataset.deltech);
+});
+document.getElementById("blockChips").addEventListener("click", (ev) => {
+  const delBtn = ev.target.closest("[data-delblock]");
+  if(delBtn) removeBlockType(delBtn.dataset.delblock);
+});
+document.getElementById("specChips").addEventListener("click", (ev) => {
+  const delBtn = ev.target.closest("[data-delspec]");
+  if(delBtn) removeSpecialty(delBtn.dataset.delspec);
+});
+document.getElementById("swatches").addEventListener("click", (ev) => {
+  const sw = ev.target.closest("[data-theme]");
+  if(sw) setTheme(sw.dataset.theme);
+});
+document.getElementById("gridColsOptions").addEventListener("click", (ev) => {
+  const opt = ev.target.closest("[data-cols]");
+  if(opt) setGridCols(parseInt(opt.dataset.cols, 10));
+});
+
+function editTechniqueIcon(name){
+  const current = state.config.techniqueIcons[name] || "";
+  const val = prompt(`Emoji para "${name}" (déjalo vacío para quitarlo):`, current);
+  if(val === null) return;
+  if(val.trim() === "") delete state.config.techniqueIcons[name];
+  else state.config.techniqueIcons[name] = val.trim().slice(0,4);
+  saveState();
+  renderSettings();
+}
+function addTechniqueToConfig(){
+  const input = document.getElementById("settingsTechInput");
+  const name = input.value.trim();
+  if(!name || state.config.techniques.includes(name)) return;
+  state.config.techniques.push(name);
+  input.value = "";
+  saveState();
+  renderSettings();
+}
+function removeTechnique(name){
+  state.config.techniques = state.config.techniques.filter(t => t !== name);
+  saveState();
+  renderSettings();
+}
+function addBlockToConfig(){
+  const input = document.getElementById("settingsBlockInput");
+  const name = input.value.trim();
+  if(!name || state.config.blockTypes.includes(name)) return;
+  state.config.blockTypes.push(name);
+  input.value = "";
+  saveState();
+  renderSettings();
+}
+function removeBlockType(name){
+  state.config.blockTypes = state.config.blockTypes.filter(b => b !== name);
+  saveState();
+  renderSettings();
+}
+function addSpecialtyToConfig(){
+  const input = document.getElementById("settingsSpecInput");
+  const name = input.value.trim();
+  if(!name || state.config.specialties.includes(name)) return;
+  state.config.specialties.push(name);
+  input.value = "";
+  saveState();
+  renderSettings();
+}
+function removeSpecialty(name){
+  state.config.specialties = state.config.specialties.filter(s => s !== name);
+  saveState();
+  renderSettings();
+}
+function addTagCategory(){
+  const input = document.getElementById("newTagCategoryInput");
+  const name = input.value.trim();
+  if(!name) return;
+  state.config.tagCategories.push({ name, tags: [] });
+  input.value = "";
+  saveState();
+  renderSettings();
+}
+function removeTagCategory(ci){
+  state.config.tagCategories.splice(ci,1);
+  saveState();
+  renderSettings();
+}
+function addTagToCategory(ci){
+  const input = document.getElementById("tagInput_" + ci);
+  const val = input.value.trim();
+  if(!val || state.config.tagCategories[ci].tags.includes(val)) return;
+  state.config.tagCategories[ci].tags.push(val);
+  saveState();
+  renderSettings();
+}
+function removeTagFromCategory(ci, ti){
+  state.config.tagCategories[ci].tags.splice(ti,1);
+  saveState();
+  renderSettings();
+}
+function updateCalRange(i, field, val){
+  if(field === "color") state.config.calendarRanges[i].color = val;
+  else state.config.calendarRanges[i][field] = parseInt(val,10) || 0;
+  saveState();
+}
+function addCalRange(){
+  state.config.calendarRanges.push({ min:1, max:1, color:"#146A63" });
+  saveState();
+  renderSettings();
+}
+function removeCalRange(i){
+  state.config.calendarRanges.splice(i,1);
+  saveState();
+  renderSettings();
+}
+function moveStatsWidget(i, dir){
+  const arr = state.config.statsOrder;
+  const j = dir === "up" ? i-1 : i+1;
+  if(j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  saveState();
+  renderSettings();
+}
+function setTheme(c){
+  state.config.theme = c;
+  applyTheme();
+  saveState();
+  renderSettings();
+}
+function setGridCols(n){
+  state.config.techGridCols = n;
+  saveState();
+  renderSettings();
+}
+function clearAllData(){
+  if(!confirm("Esto borrará todas las técnicas y cirugías registradas (no las listas de nombres). ¿Seguro?")) return;
+  state.logs.techniques = [];
+  state.logs.surgeries = [];
+  pendingTechniques = [];
+  saveState();
+  renderHome();
+}
+
+/* ================= Init ================= */
+(async function init(){
+  await loadState();
+  document.getElementById("advDate").value = todayStr();
+  renderHome();
+})();
+</script>
+</body>
+</html>
